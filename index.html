@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Datos - Control de Acceso</title>
+    <!-- SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Fuente de terminal -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f0d;
+            --primary-mono: #00ff66; /* Verde terminal clásico tipo búnker */
+            --primary-dim: #00220d;
+            --border-color: #006622;
+            --danger-color: #ff3333;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            /* Fondo integrado con la imagen SCP local y una capa oscura semitransparente para legibilidad */
+            background: linear-gradient(rgba(11, 15, 13, 0.92), rgba(11, 15, 13, 0.92)), url(https://wallpaper.dog/large/17021880.jpg) no-repeat center center fixed;
+            background-size: cover;
+            color: var(--primary-mono);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: rgba(5, 10, 7, 0.9);
+            border: 2px solid var(--border-color);
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.15);
+        }
+
+        h1, h2, h3 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 8px;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+        }
+
+        .section { display: none; }
+        .active-section { display: block; }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background-color: #001105;
+            border: 1px solid var(--border-color);
+            color: var(--primary-mono);
+            border-radius: 2px;
+            box-sizing: border-box;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-mono);
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+        }
+
+        button {
+            background-color: var(--primary-dim);
+            color: var(--primary-mono);
+            border: 1px solid var(--primary-mono);
+            padding: 12px 15px;
+            border-radius: 2px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--primary-mono);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--primary-mono);
+        }
+
+        .btn-danger {
+            background-color: #220000;
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-color);
+            color: #ffffff;
+            box-shadow: 0 0 15px var(--danger-color);
+        }
+
+        .btn-secondary {
+            background-color: #001a33;
+            border-color: #00aaff;
+            color: #00aaff;
+        }
+
+        .btn-secondary:hover {
+            background-color: #00aaff;
+            color: #000;
+            box-shadow: 0 0 15px #00aaff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary-dim);
+            color: var(--primary-mono);
+        }
+
+        .nav-links {
+            margin: 15px 0;
+            cursor: pointer;
+            color: var(--primary-mono);
+            text-decoration: underline;
+            display: inline-block;
+        }
+
+        .nav-links:hover {
+            color: #ffffff;
+            text-shadow: 0 0 5px var(--primary-mono);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- 1) SECCIÓN: EL ACCESO -->
+    <div id="section-login" class="section active-section">
+        <h2>[SEC_01] Terminal de Acceso - Autorizado Solo Personal</h2>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Correo / Identificador de Agente" required>
+            <input type="password" id="loginPassword" placeholder="Contraseña de Seguridad" required>
+            <button type="submit">Desclasificar Sesión</button>
+        </form>
+        <p>¿Sin credenciales de agente? <span class="nav-links" onclick="cambiarSeccion('section-register')">Solicitar Registro de Cuenta Nueva</span></p>
+    </div>
+
+    <!-- 2) SECCIÓN: CUENTA NUEVA -->
+    <div id="section-register" class="section">
+        <h2>[SEC_02] Registro de Nuevo Personal</h2>
+        <form id="registerForm">
+            <input type="email" id="regEmail" placeholder="Correo Electrónico (Auth)" required>
+            <input type="password" id="regPassword" placeholder="Contraseña de Acceso" required>
+            <input type="text" id="identificacion" placeholder="Número de Identificación Único" required>
+            <select id="tipo_identificacion" required>
+                <option value="">Seleccione Tipo de Identificación</option>
+                <option value="CC">Cédula de Ciudadanía</option>
+                <option value="CE">Cédula de Extranjería</option>
+                <option value="NIT">NIT / Institucional</option>
+            </select>
+            <input type="text" id="nombres" placeholder="Nombres (1 y 2)" required>
+            <input type="text" id="apellidos" placeholder="Apellidos (1 y 2)" required>
+            <input type="text" id="telefono" placeholder="Canal de Contacto (Teléfono)" required>
+            <input type="text" id="direccion" placeholder="Base de Operaciones / Dirección" required>
+            <input type="text" id="username" placeholder="Alias / Nombre de Usuario (Único)" required>
+            
+            <button type="submit">Registrar en la Base de Datos</button>
+        </form>
+        <p>¿Ya cuentas con autorización? <span class="nav-links" onclick="cambiarSeccion('section-login')">Volver al Acceso</span></p>
+    </div>
+
+    <!-- 3) SECCIÓN: EL LOBBY -->
+    <div id="section-lobby" class="section">
+        <h2>[SEC_03] Lobby de Control y Monitoreo</h2>
+        <p id="welcomeMsg" style="color: #00ffaa;"></p>
+        <button class="btn-secondary" onclick="cambiarSeccion('section-edit')">Gestionar Mis Datos / Expediente</button>
+        <button class="btn-danger" onclick="cerrarSesion()">Terminar Sesión de Operaciones</button>
+        
+        <h3>Personal Registrado en el Sistema</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Alias (Username)</th>
+                    <th>Nombre de Agente</th>
+                    <th>Estado de Red</th>
+                </tr>
+            </thead>
+            <tbody id="usuariosTableBody">
+                <!-- Se llena dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4) SECCIÓN: EDICIÓN -->
+    <div id="section-edit" class="section">
+        <h2>[SEC_04] Expediente y Protocolo de Eliminación</h2>
+        <span class="nav-links" onclick="cambiarSeccion('section-lobby')">← Regresar al Lobby</span>
+        
+        <form id="updateForm">
+            <label>Identificación (Inalterable):</label>
+            <input type="text" id="editIdentificacion" placeholder="Identificación" disabled>
+            <input type="text" id="editNombres" placeholder="Nombres" required>
+            <input type="text" id="editApellidos" placeholder="Apellidos" required>
+            <input type="text" id="editTelefono" placeholder="Teléfono" required>
+            <input type="text" id="editDireccion" placeholder="Dirección" required>
+            <input type="text" id="editUsername" placeholder="Username" required>
+            <button type="submit">Actualizar Expediente</button>
+        </form>
+
+        <hr style="border-color: var(--border-color); margin: 25px 0;">
+        <h3>⚠️ Protocolo Omega: Eliminación de Cuenta</h3>
+        <p style="color: #ff9999;">Advertencia: Esta acción destruirá permanentemente tus registros en la base de datos</p>
+        <input type="password" id="deletePasswordConfirm" placeholder="Ingrese su contraseña para autorizar la purga">
+        <button class="btn-danger" onclick="eliminarCuenta()">Ejecutar Destrucción de Datos</button>
+    </div>
+
+</div>
+
+<script>
+    // Configuración de Supabase (Inserta aquí tus credenciales reales)
+    const SUPABASE_URL = 'https://vbsnqsdqggesnwjrtuqo.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_fi5IzoGWlpF0OLFXeW2lLw_jGYdgpXf';
+
+    const { createClient } = supabase;
+    const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function cambiarSeccion(sectionId) {
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
+        document.getElementById(sectionId).classList.add('active-section');
+        if (sectionId === 'section-lobby') cargarLobby();
+        if (sectionId === 'section-edit') cargarDatosEdicion();
+    }
+
+    // 1) ACCESO
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            alert('Acceso Denegado: Credenciales inválidas.');
+        } else {
+            alert('Acceso Concedido.');
+            cambiarSeccion('section-lobby');
+        }
+    });
+
+    // 2) CUENTA NUEVA
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+
+        const { data: authData, error: authError } = await _supabase.auth.signUp({ email, password });
+        if (authError) {
+            alert('Error en registro Auth: ' + authError.message);
+            return;
+        }
+
+        const authUserId = authData.user.id;
+
+        const nuevoUsuario = {
+            auth_user_id: authUserId,
+            identificacion: document.getElementById('identificacion').value,
+            tipo_identificacion: document.getElementById('tipo_identificacion').value,
+            nombres_1_y_2: document.getElementById('nombres').value,
+            apellidos_1_y_2: document.getElementById('apellidos').value,
+            telefono: document.getElementById('telefono').value,
+            direccion: document.getElementById('direccion').value,
+            username: document.getElementById('username').value,
+            foto: false
+        };
+
+        const { error: dbError } = await _supabase.from('Ussers (CRUD aplicado)').insert([nuevoUsuario]);
+        if (dbError) {
+            alert('Error al almacenar datos en BD: ' + dbError.message);
+        } else {
+            alert('Expediente creado con éxito. Proceda a iniciar sesión.');
+            document.getElementById('registerForm').reset();
+            cambiarSeccion('section-login');
+        }
+    });
+
+    // 3) LOBBY
+    async function cargarLobby() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) {
+            cambiarSeccion('section-login');
+            return;
+        }
+
+        document.getElementById('welcomeMsg').innerText = `Agente en línea: ${session.user.email}`;
+
+        const { data: users, error } = await _supabase.from('Ussers (CRUD aplicado)').select('*');
+        if (!error) {
+            const tbody = document.getElementById('usuariosTableBody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${u.username}</td>
+                        <td>${u.nombres_1_y_2} ${u.apellidos_1_y_2}</td>
+                        <td><span style="color: #00ff66;">● Activo en Red</span></td>
+                    </tr>
+                `;
+            });
+        }
+    }
+
+    // 4) EDICIÓN Y CARGA DE DATOS
+    async function cargarDatosEdicion() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) return;
+
+        const { data, error } = await _supabase
+            .from('Ussers (CRUD aplicado)')
+            .select('*')
+            .eq('auth_user_id', session.user.id)
+            .single();
+
+        if (data) {
+            document.getElementById('editIdentificacion').value = data.identificacion;
+            document.getElementById('editNombres').value = data.nombres_1_y_2;
+            document.getElementById('editApellidos').value = data.apellidos_1_y_2;
+            document.getElementById('editTelefono').value = data.telefono;
+            document.getElementById('editDireccion').value = data.direccion;
+            document.getElementById('editUsername').value = data.username;
+        }
+    }
+
+    document.getElementById('updateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const { data: { session } } = await _supabase.auth.getSession();
+
+        const datosActualizados = {
+            nombres_1_y_2: document.getElementById('editNombres').value,
+            apellidos_1_y_2: document.getElementById('editApellidos').value,
+            telefono: document.getElementById('editTelefono').value,
+            direccion: document.getElementById('editDireccion').value,
+            username: document.getElementById('editUsername').value
+        };
+
+        const { error } = await _supabase
+            .from('Ussers (CRUD aplicado)')
+            .update(datosActualizados)
+            .eq('auth_user_id', session.user.id);
+
+        if (error) {
+            alert('Error al actualizar expediente: ' + error.message);
+        } else {
+            alert('¡Expediente actualizado con éxito!');
+        }
+    });
+
+    async function eliminarCuenta() {
+        const password = document.getElementById('deletePasswordConfirm').value;
+        if (!password) {
+            alert('Debe ingresar su contraseña para confirmar la purga.');
+            return;
+        }
+
+        if (!confirm('¿CONFIRMA LA ELIMINACIÓN TOTAL DE SUS DATOS Y CREDENCIALES?')) return;
+
+        const { data: { session } } = await _supabase.auth.getSession();
+        const email = session.user.email;
+
+        const { error: loginError } = await _supabase.auth.signInWithPassword({ email, password });
+        if (loginError) {
+            alert('Verificación fallida: Contraseña incorrecta.');
+            return;
+        }
+
+        const { error: dbError } = await _supabase
+            .from('Ussers (CRUD aplicado)')
+            .delete()
+            .eq('auth_user_id', session.user.id);
+
+        if (dbError) {
+            alert('Error al purgar registros de la tabla: ' + dbError.message);
+            return;
+        }
+
+        alert('Expediente y cuenta eliminados.');
+        await _supabase.auth.signOut();
+        cambiarSeccion('section-login');
+    }
+
+    function cerrarSesion() {
+        _supabase.auth.signOut().then(() => {
+            cambiarSeccion('section-login');
+        });
+    }
+
+    window.onload = async () => {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) {
+            cambiarSeccion('section-lobby');
+        } else {
+            cambiarSeccion('section-login');
+        }
+    };
+</script>
+
+</body>
+</html>
