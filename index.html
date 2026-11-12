@@ -11,7 +11,7 @@
     <style>
         :root {
             --bg-color: #0b0f0d;
-            --primary-mono: #00ff66; /* Verde terminal clásico tipo búnker */
+            --primary-mono: #00ff66;
             --primary-dim: #00220d;
             --border-color: #006622;
             --danger-color: #ff3333;
@@ -19,7 +19,6 @@
 
         body {
             font-family: 'Share Tech Mono', 'Courier New', monospace;
-            /* Fondo integrado con la imagen SCP local y una capa oscura semitransparente para legibilidad */
             background: linear-gradient(rgba(11, 15, 13, 0.92), rgba(11, 15, 13, 0.92)), url(https://wallpaper.dog/large/17021880.jpg) no-repeat center center fixed;
             background-size: cover;
             color: var(--primary-mono);
@@ -28,9 +27,9 @@
         }
 
         .container {
-            max-width: 700px;
+            max-width: 750px;
             margin: 40px auto;
-            background: rgba(5, 10, 7, 0.9);
+            background: rgba(5, 10, 7, 0.92);
             border: 2px solid var(--border-color);
             padding: 30px;
             border-radius: 4px;
@@ -51,7 +50,7 @@
         input, select {
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
+            margin: 8px 0 14px 0;
             background-color: #001105;
             border: 1px solid var(--border-color);
             color: var(--primary-mono);
@@ -66,6 +65,11 @@
             box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
         }
 
+        input[type="file"] {
+            border: 1px dashed var(--border-color);
+            cursor: pointer;
+        }
+
         button {
             background-color: var(--primary-dim);
             color: var(--primary-mono);
@@ -74,17 +78,22 @@
             border-radius: 2px;
             cursor: pointer;
             width: 100%;
-            margin-top: 15px;
+            margin-top: 10px;
             font-family: 'Share Tech Mono', monospace;
             font-weight: bold;
             letter-spacing: 1px;
             transition: all 0.3s ease;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: var(--primary-mono);
             color: var(--bg-color);
             box-shadow: 0 0 15px var(--primary-mono);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-danger {
@@ -121,6 +130,7 @@
             border: 1px solid var(--border-color);
             padding: 10px;
             text-align: left;
+            vertical-align: middle;
         }
 
         th {
@@ -140,6 +150,38 @@
             color: #ffffff;
             text-shadow: 0 0 5px var(--primary-mono);
         }
+
+        /* Estilos para Avatares */
+        .avatar-preview {
+            width: 90px;
+            height: 90px;
+            border-radius: 4px;
+            border: 2px solid var(--primary-mono);
+            object-fit: cover;
+            display: block;
+            margin: 10px 0;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+            background-color: #001105;
+        }
+
+        .avatar-table {
+            width: 42px;
+            height: 42px;
+            border-radius: 4px;
+            border: 1px solid var(--primary-mono);
+            object-fit: cover;
+            vertical-align: middle;
+        }
+
+        .agent-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0, 34, 13, 0.4);
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -150,9 +192,11 @@
     <div id="section-login" class="section active-section">
         <h2>[SEC_01] Terminal de Acceso - Autorizado Solo Personal</h2>
         <form id="loginForm">
-            <input type="email" id="loginEmail" placeholder="Correo / Identificador de Agente" required>
+            <label>Identificador de Acceso:</label>
+            <input type="text" id="loginIdentifier" placeholder="Correo Electrónico o Alias (Username)" required>
+            <label>Clave de Seguridad:</label>
             <input type="password" id="loginPassword" placeholder="Contraseña de Seguridad" required>
-            <button type="submit">Desclasificar Sesión</button>
+            <button type="submit" id="btnLogin">Desclasificar Sesión</button>
         </form>
         <p>¿Sin credenciales de agente? <span class="nav-links" onclick="cambiarSeccion('section-register')">Solicitar Registro de Cuenta Nueva</span></p>
     </div>
@@ -161,8 +205,12 @@
     <div id="section-register" class="section">
         <h2>[SEC_02] Registro de Nuevo Personal</h2>
         <form id="registerForm">
+            <label>Foto de Expediente (Opcional):</label>
+            <img id="regPreview" class="avatar-preview" src="https://placehold.co/90x90/001105/00ff66?text=SIN+FOTO" alt="Vista previa">
+            <input type="file" id="regFoto" accept="image/*" onchange="previsualizarImagen(this, 'regPreview')">
+
             <input type="email" id="regEmail" placeholder="Correo Electrónico (Auth)" required>
-            <input type="password" id="regPassword" placeholder="Contraseña de Acceso" required>
+            <input type="password" id="regPassword" placeholder="Contraseña de Acceso (Mínimo 6 caracteres)" minlength="6" required>
             <input type="text" id="identificacion" placeholder="Número de Identificación Único" required>
             <select id="tipo_identificacion" required>
                 <option value="">Seleccione Tipo de Identificación</option>
@@ -176,7 +224,7 @@
             <input type="text" id="direccion" placeholder="Base de Operaciones / Dirección" required>
             <input type="text" id="username" placeholder="Alias / Nombre de Usuario (Único)" required>
             
-            <button type="submit">Registrar en la Base de Datos</button>
+            <button type="submit" id="btnRegister">Registrar en la Base de Datos</button>
         </form>
         <p>¿Ya cuentas con autorización? <span class="nav-links" onclick="cambiarSeccion('section-login')">Volver al Acceso</span></p>
     </div>
@@ -184,7 +232,15 @@
     <!-- 3) SECCIÓN: EL LOBBY -->
     <div id="section-lobby" class="section">
         <h2>[SEC_03] Lobby de Control y Monitoreo</h2>
-        <p id="welcomeMsg" style="color: #00ffaa;"></p>
+        
+        <div class="agent-header">
+            <img id="lobbyAvatar" class="avatar-preview" style="margin:0; width:65px; height:65px;" src="https://placehold.co/65x65/001105/00ff66?text=AGENTE" alt="Avatar">
+            <div>
+                <p id="welcomeMsg" style="color: #00ffaa; margin: 0; font-size: 1.1em;"></p>
+                <small id="welcomeSub" style="color: #00aa55;"></small>
+            </div>
+        </div>
+
         <button class="btn-secondary" onclick="cambiarSeccion('section-edit')">Gestionar Mis Datos / Expediente</button>
         <button class="btn-danger" onclick="cerrarSesion()">Terminar Sesión de Operaciones</button>
         
@@ -192,6 +248,7 @@
         <table>
             <thead>
                 <tr>
+                    <th>Foto</th>
                     <th>Alias (Username)</th>
                     <th>Nombre de Agente</th>
                     <th>Estado de Red</th>
@@ -209,14 +266,24 @@
         <span class="nav-links" onclick="cambiarSeccion('section-lobby')">← Regresar al Lobby</span>
         
         <form id="updateForm">
+            <label>Fotografía de Perfil:</label>
+            <img id="editPreview" class="avatar-preview" src="https://placehold.co/90x90/001105/00ff66?text=SIN+FOTO" alt="Foto actual">
+            <input type="file" id="editFoto" accept="image/*" onchange="previsualizarImagen(this, 'editPreview')">
+
             <label>Identificación (Inalterable):</label>
             <input type="text" id="editIdentificacion" placeholder="Identificación" disabled>
+            <label>Nombres:</label>
             <input type="text" id="editNombres" placeholder="Nombres" required>
+            <label>Apellidos:</label>
             <input type="text" id="editApellidos" placeholder="Apellidos" required>
+            <label>Teléfono:</label>
             <input type="text" id="editTelefono" placeholder="Teléfono" required>
+            <label>Dirección:</label>
             <input type="text" id="editDireccion" placeholder="Dirección" required>
+            <label>Alias (Username):</label>
             <input type="text" id="editUsername" placeholder="Username" required>
-            <button type="submit">Actualizar Expediente</button>
+            
+            <button type="submit" id="btnUpdate">Actualizar Expediente</button>
         </form>
 
         <hr style="border-color: var(--border-color); margin: 25px 0;">
@@ -229,12 +296,43 @@
 </div>
 
 <script>
-    // Configuración de Supabase (Inserta aquí tus credenciales reales)
     const SUPABASE_URL = 'https://vbsnqsdqggesnwjrtuqo.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_fi5IzoGWlpF0OLFXeW2lLw_jGYdgpXf';
+    const TABLA_USUARIOS = 'Ussers (CRUD aplicado)';
+    const BUCKET_AVATARES = 'avatares';
+    const DEFAULT_AVATAR = 'https://placehold.co/90x90/001105/00ff66?text=AGENTE';
 
     const { createClient } = supabase;
     const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Utilidad: Vista previa local de imagen seleccionada
+    function previsualizarImagen(input, imgId) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => document.getElementById(imgId).src = e.target.result;
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Utilidad: Subir imagen a Supabase Storage y obtener URL pública
+    async function subirImagenAvatar(file, userId) {
+        if (!file) return null;
+        const extension = file.name.split('.').pop();
+        const filePath = `${userId}_${Date.now()}.${extension}`;
+
+        const { error: uploadError } = await _supabase.storage
+            .from(BUCKET_AVATARES)
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) {
+            console.error('Error subiendo imagen:', uploadError);
+            alert('Advertencia: No se pudo subir la imagen (' + uploadError.message + '). Se continuará sin foto.');
+            return null;
+        }
+
+        const { data } = _supabase.storage.from(BUCKET_AVATARES).getPublicUrl(filePath);
+        return data.publicUrl;
+    }
 
     function cambiarSeccion(sectionId) {
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
@@ -243,53 +341,117 @@
         if (sectionId === 'section-edit') cargarDatosEdicion();
     }
 
-    // 1) ACCESO
+    // 1) ACCESO (SOPORTA CORREO O USERNAME)
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
+        const btn = document.getElementById('btnLogin');
+        btn.disabled = true;
+        btn.innerText = 'Verificando credenciales...';
 
-        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        const identifier = document.getElementById('loginIdentifier').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        let emailParaAuth = identifier;
+
+        // Si no tiene '@', asumimos que ingresó un Username y buscamos su correo en la BD
+        if (!identifier.includes('@')) {
+            const { data: userRecord, error: lookupError } = await _supabase
+                .from(TABLA_USUARIOS)
+                .select('email')
+                .eq('username', identifier)
+                .maybeSingle();
+
+            if (lookupError || !userRecord || !userRecord.email) {
+                alert('Acceso Denegado: Alias (Username) no encontrado en la base de datos.');
+                btn.disabled = false;
+                btn.innerText = 'Desclasificar Sesión';
+                return;
+            }
+            emailParaAuth = userRecord.email;
+        }
+
+        const { data, error } = await _supabase.auth.signInWithPassword({
+            email: emailParaAuth,
+            password: password
+        });
+
+        btn.disabled = false;
+        btn.innerText = 'Desclasificar Sesión';
+
         if (error) {
-            alert('Acceso Denegado: Credenciales inválidas.');
+            alert('Acceso Denegado: ' + error.message);
         } else {
-            alert('Acceso Concedido.');
             cambiarSeccion('section-lobby');
         }
     });
 
-    // 2) CUENTA NUEVA
+    // 2) CUENTA NUEVA CON FOTO DE PERFIL
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
+        const btn = document.getElementById('btnRegister');
+        btn.disabled = true;
+        btn.innerText = 'Procesando registro...';
 
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const username = document.getElementById('username').value.trim();
+        const fotoFile = document.getElementById('regFoto').files[0];
+
+        // Verificar previamente que el username no exista
+        const { data: existingUser } = await _supabase
+            .from(TABLA_USUARIOS)
+            .select('username')
+            .eq('username', username)
+            .maybeSingle();
+
+        if (existingUser) {
+            alert('Error: El Alias (Username) ya está ocupado por otro agente.');
+            btn.disabled = false;
+            btn.innerText = 'Registrar en la Base de Datos';
+            return;
+        }
+
+        // Registrar en Supabase Auth
         const { data: authData, error: authError } = await _supabase.auth.signUp({ email, password });
         if (authError) {
             alert('Error en registro Auth: ' + authError.message);
+            btn.disabled = false;
+            btn.innerText = 'Registrar en la Base de Datos';
             return;
         }
 
         const authUserId = authData.user.id;
 
+        // Subir foto si el usuario seleccionó una
+        let fotoUrl = null;
+        if (fotoFile) {
+            fotoUrl = await subirImagenAvatar(fotoFile, authUserId);
+        }
+
         const nuevoUsuario = {
             auth_user_id: authUserId,
-            identificacion: document.getElementById('identificacion').value,
+            email: email,
+            identificacion: document.getElementById('identificacion').value.trim(),
             tipo_identificacion: document.getElementById('tipo_identificacion').value,
-            nombres_1_y_2: document.getElementById('nombres').value,
-            apellidos_1_y_2: document.getElementById('apellidos').value,
-            telefono: document.getElementById('telefono').value,
-            direccion: document.getElementById('direccion').value,
-            username: document.getElementById('username').value,
-            foto: false
+            nombres_1_y_2: document.getElementById('nombres').value.trim(),
+            apellidos_1_y_2: document.getElementById('apellidos').value.trim(),
+            telefono: document.getElementById('telefono').value.trim(),
+            direccion: document.getElementById('direccion').value.trim(),
+            username: username,
+            foto: Boolean(fotoUrl),
+            foto_url: fotoUrl
         };
 
-        const { error: dbError } = await _supabase.from('Ussers (CRUD aplicado)').insert([nuevoUsuario]);
+        const { error: dbError } = await _supabase.from(TABLA_USUARIOS).insert([nuevoUsuario]);
+        
+        btn.disabled = false;
+        btn.innerText = 'Registrar en la Base de Datos';
+
         if (dbError) {
             alert('Error al almacenar datos en BD: ' + dbError.message);
         } else {
-            alert('Expediente creado con éxito. Proceda a iniciar sesión.');
+            alert('Expediente creado con éxito. Ya puedes iniciar sesión con tu Correo o Alias.');
             document.getElementById('registerForm').reset();
+            document.getElementById('regPreview').src = DEFAULT_AVATAR;
             cambiarSeccion('section-login');
         }
     });
@@ -302,15 +464,21 @@
             return;
         }
 
-        document.getElementById('welcomeMsg').innerText = `Agente en línea: ${session.user.email}`;
+        const { data: users, error } = await _supabase.from(TABLA_USUARIOS).select('*');
+        if (!error && users) {
+            // Buscar perfil del usuario logueado para mostrar su foto y alias en cabecera
+            const miPerfil = users.find(u => u.auth_user_id === session.user.id);
+            document.getElementById('welcomeMsg').innerText = `Agente: ${miPerfil ? miPerfil.username : session.user.email}`;
+            document.getElementById('welcomeSub').innerText = `Canal: ${session.user.email}`;
+            document.getElementById('lobbyAvatar').src = (miPerfil && miPerfil.foto_url) ? miPerfil.foto_url : DEFAULT_AVATAR;
 
-        const { data: users, error } = await _supabase.from('Ussers (CRUD aplicado)').select('*');
-        if (!error) {
             const tbody = document.getElementById('usuariosTableBody');
             tbody.innerHTML = '';
             users.forEach(u => {
+                const avatar = u.foto_url ? u.foto_url : DEFAULT_AVATAR;
                 tbody.innerHTML += `
                     <tr>
+                        <td><img src="${avatar}" class="avatar-table" alt="Foto"></td>
                         <td>${u.username}</td>
                         <td>${u.nombres_1_y_2} ${u.apellidos_1_y_2}</td>
                         <td><span style="color: #00ff66;">● Activo en Red</span></td>
@@ -320,13 +488,13 @@
         }
     }
 
-    // 4) EDICIÓN Y CARGA DE DATOS
+    // 4) EDICIÓN Y ACTUALIZACIÓN DE FOTO
     async function cargarDatosEdicion() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (!session) return;
 
-        const { data, error } = await _supabase
-            .from('Ussers (CRUD aplicado)')
+        const { data } = await _supabase
+            .from(TABLA_USUARIOS)
             .select('*')
             .eq('auth_user_id', session.user.id)
             .single();
@@ -338,30 +506,50 @@
             document.getElementById('editTelefono').value = data.telefono;
             document.getElementById('editDireccion').value = data.direccion;
             document.getElementById('editUsername').value = data.username;
+            document.getElementById('editPreview').src = data.foto_url ? data.foto_url : DEFAULT_AVATAR;
+            document.getElementById('editFoto').value = '';
         }
     }
 
     document.getElementById('updateForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = document.getElementById('btnUpdate');
+        btn.disabled = true;
+        btn.innerText = 'Guardando cambios...';
+
         const { data: { session } } = await _supabase.auth.getSession();
+        const nuevaFotoFile = document.getElementById('editFoto').files[0];
 
         const datosActualizados = {
-            nombres_1_y_2: document.getElementById('editNombres').value,
-            apellidos_1_y_2: document.getElementById('editApellidos').value,
-            telefono: document.getElementById('editTelefono').value,
-            direccion: document.getElementById('editDireccion').value,
-            username: document.getElementById('editUsername').value
+            nombres_1_y_2: document.getElementById('editNombres').value.trim(),
+            apellidos_1_y_2: document.getElementById('editApellidos').value.trim(),
+            telefono: document.getElementById('editTelefono').value.trim(),
+            direccion: document.getElementById('editDireccion').value.trim(),
+            username: document.getElementById('editUsername').value.trim()
         };
 
+        // Si el usuario seleccionó una nueva foto, la subimos y actualizamos foto_url
+        if (nuevaFotoFile) {
+            const nuevaUrl = await subirImagenAvatar(nuevaFotoFile, session.user.id);
+            if (nuevaUrl) {
+                datosActualizados.foto = true;
+                datosActualizados.foto_url = nuevaUrl;
+            }
+        }
+
         const { error } = await _supabase
-            .from('Ussers (CRUD aplicado)')
+            .from(TABLA_USUARIOS)
             .update(datosActualizados)
             .eq('auth_user_id', session.user.id);
+
+        btn.disabled = false;
+        btn.innerText = 'Actualizar Expediente';
 
         if (error) {
             alert('Error al actualizar expediente: ' + error.message);
         } else {
             alert('¡Expediente actualizado con éxito!');
+            cambiarSeccion('section-lobby');
         }
     });
 
@@ -384,7 +572,7 @@
         }
 
         const { error: dbError } = await _supabase
-            .from('Ussers (CRUD aplicado)')
+            .from(TABLA_USUARIOS)
             .delete()
             .eq('auth_user_id', session.user.id);
 
@@ -393,7 +581,7 @@
             return;
         }
 
-        alert('Expediente y cuenta eliminados.');
+        alert('Expediente eliminado.');
         await _supabase.auth.signOut();
         cambiarSeccion('section-login');
     }
