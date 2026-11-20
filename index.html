@@ -188,7 +188,7 @@
 
 <div class="container">
 
-    <!-- 1) SECCIÓN: EL ACCESO -->
+    <!-- Acceso -->
     <div id="section-login" class="section active-section">
         <h2>[SEC_01] Terminal de Acceso - Autorizado Solo Personal</h2>
         <form id="loginForm">
@@ -201,7 +201,7 @@
         <p>¿Sin credenciales de agente? <span class="nav-links" onclick="cambiarSeccion('section-register')">Solicitar Registro de Cuenta Nueva</span></p>
     </div>
 
-    <!-- 2) SECCIÓN: CUENTA NUEVA -->
+    <!-- Cuenta nueva-->
     <div id="section-register" class="section">
         <h2>[SEC_02] Registro de Nuevo Personal</h2>
         <form id="registerForm">
@@ -229,7 +229,7 @@
         <p>¿Ya cuentas con autorización? <span class="nav-links" onclick="cambiarSeccion('section-login')">Volver al Acceso</span></p>
     </div>
 
-    <!-- 3) SECCIÓN: EL LOBBY -->
+    <!-- Lobby -->
     <div id="section-lobby" class="section">
         <h2>[SEC_03] Lobby de Control y Monitoreo</h2>
         
@@ -255,12 +255,12 @@
                 </tr>
             </thead>
             <tbody id="usuariosTableBody">
-                <!-- Se llena dinámicamente -->
+              
             </tbody>
         </table>
     </div>
 
-    <!-- 4) SECCIÓN: EDICIÓN -->
+    <!-- Edicion -->
     <div id="section-edit" class="section">
         <h2>[SEC_04] Expediente y Protocolo de Eliminación</h2>
         <span class="nav-links" onclick="cambiarSeccion('section-lobby')">← Regresar al Lobby</span>
@@ -305,7 +305,7 @@
     const { createClient } = supabase;
     const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Utilidad: Vista previa local de imagen seleccionada
+    
     function previsualizarImagen(input, imgId) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -314,7 +314,7 @@
         }
     }
 
-    // Utilidad: Subir imagen a Supabase Storage y obtener URL pública
+
     async function subirImagenAvatar(file, userId) {
         if (!file) return null;
         const extension = file.name.split('.').pop();
@@ -341,7 +341,7 @@
         if (sectionId === 'section-edit') cargarDatosEdicion();
     }
 
-    // 1) ACCESO (SOPORTA CORREO O USERNAME)
+    // 1) acceso
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnLogin');
@@ -352,7 +352,7 @@
         const password = document.getElementById('loginPassword').value;
         let emailParaAuth = identifier;
 
-        // Si no tiene '@', asumimos que ingresó un Username y buscamos su correo en la BD
+        /
         if (!identifier.includes('@')) {
             const { data: userRecord, error: lookupError } = await _supabase
                 .from(TABLA_USUARIOS)
@@ -384,7 +384,7 @@
         }
     });
 
-    // 2) CUENTA NUEVA CON FOTO DE PERFIL
+    // Cuenta nueva
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnRegister');
@@ -396,7 +396,6 @@
         const username = document.getElementById('username').value.trim();
         const fotoFile = document.getElementById('regFoto').files[0];
 
-        // Verificar previamente que el username no exista
         const { data: existingUser } = await _supabase
             .from(TABLA_USUARIOS)
             .select('username')
@@ -410,7 +409,6 @@
             return;
         }
 
-        // Registrar en Supabase Auth
         const { data: authData, error: authError } = await _supabase.auth.signUp({ email, password });
         if (authError) {
             alert('Error en registro Auth: ' + authError.message);
@@ -421,7 +419,7 @@
 
         const authUserId = authData.user.id;
 
-        // Subir foto si el usuario seleccionó una
+
         let fotoUrl = null;
         if (fotoFile) {
             fotoUrl = await subirImagenAvatar(fotoFile, authUserId);
@@ -456,7 +454,7 @@
         }
     });
 
-    // 3) LOBBY
+    // Lobby
     async function cargarLobby() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (!session) {
@@ -466,7 +464,7 @@
 
         const { data: users, error } = await _supabase.from(TABLA_USUARIOS).select('*');
         if (!error && users) {
-            // Buscar perfil del usuario logueado para mostrar su foto y alias en cabecera
+          
             const miPerfil = users.find(u => u.auth_user_id === session.user.id);
             document.getElementById('welcomeMsg').innerText = `Agente: ${miPerfil ? miPerfil.username : session.user.email}`;
             document.getElementById('welcomeSub').innerText = `Canal: ${session.user.email}`;
@@ -488,7 +486,7 @@
         }
     }
 
-    // 4) EDICIÓN Y ACTUALIZACIÓN DE FOTO
+    // Upd
     async function cargarDatosEdicion() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (!session) return;
@@ -528,7 +526,7 @@
             username: document.getElementById('editUsername').value.trim()
         };
 
-        // Si el usuario seleccionó una nueva foto, la subimos y actualizamos foto_url
+  
         if (nuevaFotoFile) {
             const nuevaUrl = await subirImagenAvatar(nuevaFotoFile, session.user.id);
             if (nuevaUrl) {
